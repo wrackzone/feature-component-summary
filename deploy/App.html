@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>feature-component-summary</title>
+
+    <script type="text/javascript" src="/apps/2.0rc2/sdk.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/async/0.2.7/async.min.js"></script>
+
+    <script type="text/javascript">
+        Rally.onReady(function () {
+                var app=null;Ext.define("CustomApp",{extend:"Rally.app.App",componentCls:"app",launch:function(){app=this,this.addFeatureGrid()},componentNames:[],columnCfgs:["FormattedID","Name","Owner"],defectColumn:{text:"Defects",width:100,renderer:function(value,metaData,record,rowIdx,colIdx,store,view){var defects=record.get("Defects");if(defects&&defects.length>0){var states=_.countBy(defects,function(d){return"Closed"!=d.get("State")?"Open":"Closed"});states.Open=void 0!==states.Open?states.Open:0,states.Open=0,states.length=defects.length;var tpl=Ext.create("Ext.Template","{Open}/{length}",{compiled:!0});return tpl.apply(states)}return""}},columnRenderer:function(value,metaData,record,rowIdx,colIdx,store,view){return console.log("columnRenderer"),console.log("v",value),console.log("m",metaData),console.log("colIdx",colIdx),""},featuresLoaded:function(items){var features=items.data.items;console.log("features",features);var loadChildren=function(child,callback){child.getCollection("Children").load({fetch:!0,callback:function(records,operation,success){callback(null,records)}})};async.map(features,loadChildren,function(err,results){_.each(features,function(f,i){var requirements=results[i];console.log(f.get("Name"),requirements.length,requirements),f.set("Requirements",requirements),app.addComponentNames(requirements)}),console.log("configs",app.grid.getColumnCfgs()),app.grid.reconfigure(app.grid.getStore(),app.columnCfgs)})},addComponentNames:function(requirements){var projectNames=_.uniq(_.map(requirements,function(r){return r.get("Project").Name}));_.each(projectNames,function(name){-1==_.indexOf(app.componentNames,name)&&(app.componentNames.push(name),app.columnCfgs.push(Ext.create("Ext.grid.column.Column",{text:name,header:name,dataIndex:name,defaultWidth:100,renderer:app.columnRenderer})))}),console.log("projectNames",app.componentNames)},addFeatureGrid:function(){var viewport=Ext.create("Ext.Viewport");Rally.data.ModelFactory.getModel({type:"PortfolioItem/Initiative",success:function(featureModel){app.grid=Ext.create("Rally.ui.grid.Grid",{xtype:"rallygrid",model:featureModel,listeners:{load:app.featuresLoaded},columnCfgs:app.columnCfgs}),console.log("store",app.grid.getStore()),viewport.add(app.grid)}})},getSnapshots:function(record,callback){var that=this,fetch=["ObjectID","_UnformattedID","State","Priority","Severity","_ItemHierarchy","_TypeHierarchy"],hydrate=["_TypeHierarchy","State","Priority","Severity"],find={_TypeHierarchy:{$in:["Defect"]},_ProjectHierarchy:{$in:app.getContext().getProject().ObjectID},__At:"current",_ItemHierarchy:{$in:record.get("ObjectID")}},storeConfig={find:find,autoLoad:!0,pageSize:1e3,limit:"Infinity",fetch:fetch,hydrate:hydrate,listeners:{scope:this,load:function(store,snapshots,success){callback(null,snapshots)}}},snapshotStore=Ext.create("Rally.data.lookback.SnapshotStore",storeConfig)}});
+
+            Rally.launchApp('CustomApp', {
+                name:"feature-component-summary",
+	            parentRepos:""
+            });
+
+        });
+    </script>
+
+
+    <style type="text/css">
+        .app {
+     /* Add app styles here */
+}
+
+    </style>
+</head>
+<body></body>
+</html>
