@@ -18,41 +18,82 @@ Ext.define('CustomApp', {
     launch: function() {
 
         app = this;
-        this.addFeatureGrid();
+
+        var configs= [{ model : "PreliminaryEstimate", 
+                       fetch : ['Name','ObjectID','Value'], 
+                       filters : [] 
+        }];
+
+        async.map( configs, this.wsapiQuery, function(err,results) {
+            app.estimateValues = results[0];
+            app.addFeatureGrid();
+        });
+    },
+
+    // generic function to perform a web services query    
+    wsapiQuery : function( config , callback ) {
+        Ext.create('Rally.data.WsapiDataStore', {
+            autoLoad : true,
+            limit : "Infinity",
+            model : config.model,
+            fetch : config.fetch,
+            filters : config.filters,
+            listeners : {
+                scope : this,
+                load : function(store, data) {
+                    callback(null,data);
+                }
+            }
+        });
     },
 
     componentNames : [],
-    columnCfgs : [
-                     'FormattedID',
-                     'Name',
-                     'Owner'
-                 ],
+    columns : [
+        { text: 'ID',   dataIndex: 'FormattedID', width : 45 },
+        { text: 'Name', dataIndex: 'Name', width : 200 },  
+        { text: 'State', dataIndex: 'State', renderer : function(value) { return value ? value._refObjectName : ""; } },  
+        { text: 'P. Estimate', dataIndex: 'PreliminaryEstimate', width : 75, renderer : function(value) { 
+            console.log(value);
+            return value ? value._refObjectName + " (" + app.pointValue(value)+")" : ""; 
+            } 
+        },  
+        { text: 'Story Count', dataIndex: 'LeafStoryCount', width : 75},
+        { text: 'Story Points', dataIndex: 'LeafStoryPlanEstimateTotal', width : 75}
+    ],
 
-    defectColumn : {  
-        text: "Defects", width:100, 
-        renderer : function(value, metaData, record, rowIdx, colIdx, store, view) {
-            var defects = record.get("Defects");
-            if (defects && defects.length > 0) {
-                var states = _.countBy(defects, function(d) { 
-                    return d.get("State")!= "Closed" ? "Open" : "Closed";
-                });
-                states.Open = states.Open !== undefined ? states.Open : 0;
-                    states.Open = 0 
-                states.length = defects.length;
-                var tpl = Ext.create('Ext.Template', "{Open}/{length}", { compiled : true } );
-                return tpl.apply(states);
-            } else
-                return "";
+    pointValue : function(est) {
+        var p = _.find(app.estimateValues,function(ev) {
+            return ev.get("Name") === est._refObjectName;
+        });
+        return p ? p.get("Value") : 0;
+    },
+
+    pointValueForEstimate : function(pi) {
+
+        if (pi.get("PreliminaryEstimate")!== null) {
+            return app.pointValue(pi.get("PreliminaryEstimate"));
+        } else {
+            return 0;
         }
+    },
+
+    sumRequirementEstimates : function(reqs) {
+
+        return _.reduce( reqs, function(memo,r) { 
+            return memo + app.pointValueForEstimate(r);
+        }, 0 );
+
     },
 
     columnRenderer : function(value, metaData, record, rowIdx, colIdx, store, view) {
         // renders a component teams column
-        console.log("columnRenderer");
-        console.log("v",value);
-        console.log("m",metaData);
-        console.log("colIdx",colIdx);
-        return "";
+        console.log("v",value,"colIdx",colIdx,"name",app.columns[colIdx].text);
+        var name = app.columns[colIdx].text;
+        var reqs = _.filter(value,function(r) {
+            return r.get("Project").Name === name; 
+        })
+        // console.log("colIdx",colIdx);
+        return reqs ? app.sumRequirementEstimates(reqs) : 0;
 
     },
 
@@ -76,10 +117,7 @@ Ext.define('CustomApp', {
                 f.set("Requirements",requirements);
                 app.addComponentNames(requirements);
             });
-            console.log("configs",app.grid.getColumnCfgs());
-            //file:///Users/bmullan/Documents/Apps/feature-component-summary/App-debug.html
-            app.grid.reconfigure(app.grid.getStore(),app.columnCfgs);
-            //app.grid.getStore().load();
+            app.grid.reconfigure(app.store,app.columns);
         });
     },
 
@@ -90,12 +128,12 @@ Ext.define('CustomApp', {
         _.each(projectNames,function(name) {
             if (_.indexOf(app.componentNames,name)==-1) {
                 app.componentNames.push(name);
-                app.columnCfgs.push( Ext.create('Ext.grid.column.Column',{
+                app.columns.push( Ext.create('Ext.grid.column.Column',{
                     text: name, 
-                    header : name,
-                    dataIndex : name,
-                    defaultWidth : 100,
-                    renderer : app.columnRenderer
+                    dataIndex : "Requirements",
+                    renderer : app.columnRenderer,
+                    cls : 'component-color',
+                    width : 75
                 }));
             }
         });
@@ -103,57 +141,34 @@ Ext.define('CustomApp', {
     },
 
     addFeatureGrid : function() {
-        var viewport = Ext.create('Ext.Viewport');
-        Rally.data.ModelFactory.getModel({
-         type: 'PortfolioItem/Initiative',
-         success: function(featureModel) {
-            app.grid = Ext.create('Rally.ui.grid.Grid',{
-                 xtype: 'rallygrid',
-                 model: featureModel,
-                 listeners : {
-                    load : app.featuresLoaded
-                 },
-                 columnCfgs : app.columnCfgs
-             });
-            console.log("store",app.grid.getStore());
-             viewport.add(app.grid);
-         }
-        });
-    },
-    
-    getSnapshots : function(record, callback) {
 
-        var that = this;
-        var fetch = ['ObjectID','_UnformattedID','State','Priority','Severity','_ItemHierarchy','_TypeHierarchy'];
-        var hydrate = ['_TypeHierarchy','State','Priority','Severity'];
-        
-        var find = {
-                '_TypeHierarchy' : { "$in" : ["Defect"]} ,
-                '_ProjectHierarchy' : { "$in": app.getContext().getProject().ObjectID },
-                '__At' : 'current',
-                "_ItemHierarchy" : { "$in" : record.get("ObjectID")  }
-        };
-
-        var storeConfig = {
-            find : find,
-            autoLoad : true,
-            pageSize:1000,
-            limit: 'Infinity',
-            fetch: fetch,
-            hydrate: hydrate,
+        app.store = Ext.create('Rally.data.WsapiDataStore', {
+            model : 'PortfolioItem/Initiative',
             listeners : {
-                scope : this,
-                load: function(store, snapshots, success) {
-                    // console.log("success",success);
-                    // console.log("completed snapshots:", snapshots.length);
-                    callback(null,snapshots);
+                load: app.featuresLoaded
+            },
+            fetch : true,
+            // autoLoad : true
+        });
+
+        app.grid = Ext.create('Ext.grid.Panel', {
+            title: 'Features',
+            listeners : {
+                afterrender : function() {
+                    app.grid.reconfigure(app.store,app.columns);
                 }
-            }
-        };
+            },
+            store: app.store,
+            columns: [ app.columns
+            ],
+            height: 600,
+            width: 1200,
+        });
 
-        var snapshotStore = Ext.create('Rally.data.lookback.SnapshotStore', storeConfig);
+        app.add(app.grid);
+        app.store.load();
 
-    }
+    },
     
 });
 
@@ -170,6 +185,11 @@ Ext.define('CustomApp', {
     <style type="text/css">
         .app {
      /* Add app styles here */
+
+}
+
+.component-color {
+	background-color: Gainsboro; 
 }
 
     </style>
