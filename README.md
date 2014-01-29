@@ -3,6 +3,11 @@ feature-component-summary
 
 ## Overview
 
+Rolls up child portfolio item preliminary estimates, grouping by project.
+
+![alt text](https://raw.github.com/wrackzone/feature-component-summary/master/screenshot.png "Screenshot")
+
+
 
 ## License
 
