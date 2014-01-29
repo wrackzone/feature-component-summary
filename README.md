@@ -3,6 +3,8 @@ feature-component-summary
 
 ## Overview
 
+Rolls up child portfolio item preliminary estimates, grouping by project.
+
 
 ## License
 
