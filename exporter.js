@@ -2,7 +2,7 @@
 Ext.define("ComponentRenderer", {
 
     renderPreliminaryEstimate : function(value) { 
-        return value ? value._refObjectName + " (" + app.pointValue(value)+")" : ""; 
+        return value ? value._refObjectName + " (" + app.renderer.pointValue(value)+")" : ""; 
     },
 
     renderState : function(value) { 
