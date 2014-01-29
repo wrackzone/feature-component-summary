@@ -1,44 +1,61 @@
                 // Derived and simplified from example on bryntum.com
-Ext.define("ComponentRenderer", {
+Ext.define("ComponentRenderer", function() {
 
-    renderPreliminaryEstimate : function(value) { 
-        return value ? value._refObjectName + " (" + app.renderer.pointValue(value)+")" : ""; 
-    },
+    var self;
 
-    renderState : function(value) { 
-        return value ? value._refObjectName : ""; 
-    },
+    return {
 
-    renderComponentValue : function(value, metaData, record, rowIdx, colIdx, store, view) {
-        // renders a component teams column
-        var name = app.columns[colIdx].text;
-        var reqs = _.filter(value,function(r) {
-            return r.get("Project").Name === name; 
-        })
-        return reqs ? app.renderer.sumRequirementEstimates(reqs) : 0;
-    },
+        config : {
+            estimatevalues : [],
+            columns : []
+        },
 
-    pointValue : function(est) {
-        var p = _.find(app.estimateValues,function(ev) {
-            return ev.get("Name") === est._refObjectName;
-        });
-        return p ? p.get("Value") : 0;
-    },
+        constructor:function(config) {
+            self = this;
+            this.initConfig(config);
+            return this;
+         },
 
-    pointValueForEstimate : function(pi) {
+        renderPreliminaryEstimate : function(value) { 
+            return value ? value._refObjectName + " (" + self.pointValue(value)+")" : ""; 
+        },
 
-        if (pi.get("PreliminaryEstimate")!== null) {
-            return app.renderer.pointValue(pi.get("PreliminaryEstimate"));
-        } else {
-            return 0;
+        renderState : function(value) { 
+            return value ? value._refObjectName : ""; 
+        },
+
+        renderComponentValue : function(value, metaData, record, rowIdx, colIdx, store, view) {
+            // renders a component teams column
+            var name = self.getColumns()[colIdx].text;
+            var reqs = _.filter(value,function(r) {
+                return r.get("Project").Name === name; 
+            })
+            var val = reqs ? self.sumRequirementEstimates(reqs) : 0;
+            return val !== 0 ? val : "";
+        },
+
+        pointValue : function(est) {
+            var p = _.find(self.getEstimatevalues(),function(ev) {
+                return ev.get("Name") === est._refObjectName;
+            });
+            return p ? p.get("Value") : 0;
+        },
+
+        pointValueForEstimate : function(pi) {
+
+            if (pi.get("PreliminaryEstimate")!== null) {
+                return self.pointValue(pi.get("PreliminaryEstimate"));
+            } else {
+                return 0;
+            }
+        },
+
+        sumRequirementEstimates : function(reqs) {
+
+            return _.reduce( reqs, function(memo,r) { 
+                return memo + app.renderer.pointValueForEstimate(r);
+            }, 0 );
         }
-    },
-
-    sumRequirementEstimates : function(reqs) {
-
-        return _.reduce( reqs, function(memo,r) { 
-            return memo + app.renderer.pointValueForEstimate(r);
-        }, 0 );
     }
 
 });

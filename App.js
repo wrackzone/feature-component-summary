@@ -9,9 +9,42 @@ Ext.define('CustomApp', {
 
         app = this;
         app.exporter = Ext.create("GridExporter");
-        app.renderer = Ext.create("ComponentRenderer");
 
-        app.columns = [
+        // read the preliminary estimate values so we can map the T-shirt size to a number
+        var configs= [
+            {   model : "PreliminaryEstimate", 
+                fetch : ['Name','ObjectID','Value'], 
+                filters : [] 
+            }, 
+            {   model : "TypeDefinition",
+                fetch : true,
+                filters : [ { property:"Ordinal", operator:"=", value:1} ]
+            }
+        ];
+
+        async.map( configs, this.wsapiQuery, function(err,results) {
+            // create the custom renderer
+            console.log(results[1]);
+            var type = results[1][0].get("TypePath");
+            app.renderer = Ext.create("ComponentRenderer", {
+                estimatevalues: results[0]
+            });
+            // have to add the columns after creating the renderer
+            app.renderer.setColumns(app.addColumns());
+
+            // create the export button
+            app.addExportButton();
+            // create the grid
+            app.addFeatureGrid(type);
+        });
+    },
+
+    // used to maintain a unique set of component team names
+    componentNames : [],
+
+    // defines the basic set of columns, will be extended for each component team
+    addColumns : function() {
+         return [
             { text: 'ID',   dataIndex: 'FormattedID', width : 45 },
             { text: 'Name', dataIndex: 'Name', width : 200 },  
             { text: 'State', dataIndex: 'State', renderer : app.renderer.renderState },  
@@ -19,19 +52,9 @@ Ext.define('CustomApp', {
             { text: 'Story Count', dataIndex: 'LeafStoryCount', width : 75},
             { text: 'Story Points', dataIndex: 'LeafStoryPlanEstimateTotal', width : 75}
         ];
-
-        var configs= [{ model : "PreliminaryEstimate", 
-                       fetch : ['Name','ObjectID','Value'], 
-                       filters : [] 
-        }];
-
-        async.map( configs, this.wsapiQuery, function(err,results) {
-            app.estimateValues = results[0];
-            app.addExportButton();
-            app.addFeatureGrid();
-        });
     },
 
+    // adds an export button
     addExportButton : function () {
         var button = Ext.create('Rally.ui.Button', {
             text: 'Export',
@@ -60,12 +83,11 @@ Ext.define('CustomApp', {
         });
     },
 
-    componentNames : [],
-
+    // called when the set of portfolio items has been loaded, for each item it will then read its
+    // children and set them in a property called "Requiremnts"
     featuresLoaded : function(items) {
         var features = items.data.items;
-        console.log("features",features);
-
+        // asynchronous function to read the children collection
         var loadChildren = function(child,callback) {
             child.getCollection("Children").load({
                 fetch: true,
@@ -75,14 +97,16 @@ Ext.define('CustomApp', {
             });
         };
 
+        // call the loadChildren method for each feature, inner function called
+        // when all have been read
         async.map( features, loadChildren, function(err,results) {
             _.each(features, function(f,i) {
                 var requirements = results[i];
-                console.log(f.get("Name"), requirements.length,requirements);
                 f.set("Requirements",requirements);
                 app.addComponentNames(requirements);
             });
-            app.grid.reconfigure(app.store,app.columns);
+            // reconfigure the grid when done
+            app.grid.reconfigure(app.store,app.renderer.getColumns());
         });
     },
 
@@ -93,7 +117,7 @@ Ext.define('CustomApp', {
         _.each(projectNames,function(name) {
             if (_.indexOf(app.componentNames,name)==-1) {
                 app.componentNames.push(name);
-                app.columns.push( Ext.create('Ext.grid.column.Column',{
+                app.renderer.getColumns().push( Ext.create('Ext.grid.column.Column',{
                     text: name, 
                     dataIndex : "Requirements",
                     renderer : app.renderer.renderComponentValue,
@@ -102,36 +126,36 @@ Ext.define('CustomApp', {
                 }));
             }
         });
-        console.log("projectNames",app.componentNames);
     },
 
-    addFeatureGrid : function() {
+    addFeatureGrid : function(type) {
 
         app.store = Ext.create('Rally.data.WsapiDataStore', {
-            model : 'PortfolioItem/Initiative',
+            // model : 'PortfolioItem/Initiative',
+            model : type,
             listeners : {
                 load: app.featuresLoaded
             },
             fetch : true,
-            // autoLoad : true
+            autoLoad : true
         });
 
         app.grid = Ext.create('Ext.grid.Panel', {
             title: 'Features',
             listeners : {
                 afterrender : function() {
-                    app.grid.reconfigure(app.store,app.columns);
+                    console.log("afterRender",app.renderer.getColumns());
+                    app.grid.reconfigure(app.store,app.renderer.getColumns());
                 }
             },
             store: app.store,
-            columns: [ app.columns
-            ],
+            columns: app.renderer.getColumns(),
             height: 600,
             width: 1200,
         });
 
         app.add(app.grid);
-        app.store.load();
+        // app.store.load();
 
     },
     
