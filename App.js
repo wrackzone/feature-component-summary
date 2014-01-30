@@ -44,12 +44,12 @@ Ext.define('CustomApp', {
     // defines the basic set of columns, will be extended for each component team
     addColumns : function() {
          return [
-            { text: 'ID',   dataIndex: 'FormattedID', width : 45 },
-            { text: 'Name', dataIndex: 'Name', width : 200 },  
-            { text: 'State', dataIndex: 'State', renderer : app.renderer.renderState },  
-            { text: 'P. Estimate', dataIndex: 'PreliminaryEstimate', width : 75, renderer : app.renderer.renderPreliminaryEstimate },
-            { text: 'Story Count', dataIndex: 'LeafStoryCount', width : 75},
-            { text: 'Story Points', dataIndex: 'LeafStoryPlanEstimateTotal', width : 75}
+            { text: 'ID',   dataIndex: 'FormattedID', width : 45,sortable:false },
+            { text: 'Name', dataIndex: 'Name', width : 200,sortable:false },  
+            { text: 'State', dataIndex: 'State', renderer : app.renderer.renderState,sortable:false },  
+            { text: 'P. Estimate', dataIndex: 'PreliminaryEstimate', width : 75, renderer : app.renderer.renderPreliminaryEstimate, sortable:false },
+            { text: 'Story Count', dataIndex: 'LeafStoryCount', width : 75, sortable:false},
+            { text: 'Story Points', dataIndex: 'LeafStoryPlanEstimateTotal', width : 75,sortable:false}
         ];
     },
 
@@ -123,7 +123,8 @@ Ext.define('CustomApp', {
                     dataIndex : "Requirements",
                     renderer : app.renderer.renderComponentValuePreliminaryEstimate,
                     cls : 'component-color',
-                    width : 75
+                    width : 75,
+                    sortable:false
                 }));
                 app.renderer.getColumns().push( Ext.create('Ext.grid.column.Column',{
                     project : name,
@@ -132,7 +133,8 @@ Ext.define('CustomApp', {
                     dataIndex : "Requirements",
                     renderer : app.renderer.renderComponentValuePointsEstimate,
                     cls : 'component-color',
-                    width : 75
+                    width : 75,
+                    sortable:false
                 }));
 
             }
@@ -156,7 +158,7 @@ Ext.define('CustomApp', {
             listeners : {
                 afterrender : function() {
                     
-                    app.grid.reconfigure(app.store,app.renderer.getColumns());
+                    // app.grid.reconfigure(app.store,app.renderer.getColumns());
                 }
             },
             store: app.store,
