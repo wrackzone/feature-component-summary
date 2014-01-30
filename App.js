@@ -24,7 +24,6 @@ Ext.define('CustomApp', {
 
         async.map( configs, this.wsapiQuery, function(err,results) {
             // create the custom renderer
-            console.log(results[1]);
             var type = results[1][0].get("TypePath");
             app.renderer = Ext.create("ComponentRenderer", {
                 estimatevalues: results[0]
@@ -119,7 +118,8 @@ Ext.define('CustomApp', {
                 app.componentNames.push(name);
                 app.renderer.getColumns().push( Ext.create('Ext.grid.column.Column',{
                     project : name,
-                    text: name + ' <br>Req Est', 
+                    renderType : "ComponentEstimate",
+                    text: name + ' <br>Comp Est', 
                     dataIndex : "Requirements",
                     renderer : app.renderer.renderComponentValuePreliminaryEstimate,
                     cls : 'component-color',
@@ -127,6 +127,7 @@ Ext.define('CustomApp', {
                 }));
                 app.renderer.getColumns().push( Ext.create('Ext.grid.column.Column',{
                     project : name,
+                    renderType : "ComponentStoryEstimate",
                     text: name + ' <br>Story Est', 
                     dataIndex : "Requirements",
                     renderer : app.renderer.renderComponentValuePointsEstimate,
@@ -154,14 +155,14 @@ Ext.define('CustomApp', {
             title: 'Features',
             listeners : {
                 afterrender : function() {
-                    console.log("afterRender",app.renderer.getColumns());
+                    
                     app.grid.reconfigure(app.store,app.renderer.getColumns());
                 }
             },
             store: app.store,
             columns: app.renderer.getColumns(),
-            height: 600,
-            width: 1200,
+            // height: 600,
+            // width: 1200,
         });
 
         app.add(app.grid);

@@ -39,10 +39,10 @@ Ext.define("ComponentRenderer", function() {
         },
 
         renderComponentValuePreliminaryEstimate : function(value, metaData, record, rowIdx, colIdx, store, view) {
+            
             // renders a component teams column
             // var name = self.getColumns()[colIdx].text;
             var name = self.getColumns()[colIdx].project;
-            console.log("column name",name);
             var reqs = _.filter(value,function(r) {
                 return r.get("Project").Name === name; 
             })
@@ -92,6 +92,7 @@ Ext.define("GridExporter", {
     },
 
     _escapeForCSV: function(string) {
+        string = "" + string;
         if (string.match(/,/)) {
             if (!string.match(/"/)) {
                 string = '"' + string + '"';
@@ -102,8 +103,19 @@ Ext.define("GridExporter", {
         return string;
     },
 
-    _getFieldText: function(fieldData) {
+    _getFieldText: function(fieldData,record,col,index) {
         var text;
+
+        if (col && col.renderType === "ComponentEstimate") {
+            text = app.renderer.renderComponentValuePreliminaryEstimate(fieldData,0,record,0,index);
+            return text;
+        }
+
+        if (col && col.renderType === "ComponentStoryEstimate") {
+            text = app.renderer.renderComponentValuePointsEstimate (fieldData,0,record,0,index);
+            return text;
+        }
+        
 
         if (fieldData == null || fieldData == undefined) {
             text = '';
@@ -124,8 +136,8 @@ Ext.define("GridExporter", {
         return text;
     },
 
-    _getFieldTextAndEscape: function(fieldData) {
-        var string  = this._getFieldText(fieldData);
+    _getFieldTextAndEscape: function(fieldData,record,col,index) {
+        var string  = this._getFieldText(fieldData,record,col,index);
 
         return this._escapeForCSV(string);
     },
@@ -135,7 +147,7 @@ Ext.define("GridExporter", {
         var store   = grid.store;
         var data    = '';
 
-        console.log("store",store);
+        
         var that = this;
         Ext.Array.each(cols, function(col, index) {
             if (col.hidden != true) {
@@ -148,18 +160,19 @@ Ext.define("GridExporter", {
         // store.each(function(record) {
         // _.each( store.proxy.data, function(record) {
         _.each( store.data.items, function(record) {
-            console.log("rec",record);
-            //var entry       = record.getData();
+            
+            //var entry ''      = record.getData();
+            
             Ext.Array.each(cols, function(col, index) {
-                console.log("col",col,index);
+            
                 if (col.hidden != true) {
                     var fieldName   = col.dataIndex;
                     //var text        = entry[fieldName];
                     //var text        = record[fieldName];
-                    var text        = "" + record.get(fieldName);
-                    console.log("text",text);
+                    var text        = record.get(fieldName);
+                    
 
-                    data += that._getFieldTextAndEscape(text) + ',';
+                    data += that._getFieldTextAndEscape(text,record,col,index) + ',';
                 }
             });
             data += "\n";
@@ -175,7 +188,7 @@ Ext.define("GridExporter", {
 
         Ext.Array.each(cols, function(col, colIndex) {
             if (col.hidden != true) {
-                console.log('header: ', col.text);
+                
                 sheet.cells(1,colIndex + 1).value = col.text;
             }
         });

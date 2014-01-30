@@ -34,9 +34,25 @@ Ext.define("ComponentRenderer", function() {
             return value ? value._refObjectName : ""; 
         },
 
-        renderComponentValue : function(value, metaData, record, rowIdx, colIdx, store, view) {
+        renderComponentValuePointsEstimate : function(value, metaData, record, rowIdx, colIdx, store, view) {
             // renders a component teams column
-            var name = self.getColumns()[colIdx].text;
+            // var name = self.getColumns()[colIdx].text;
+            var name = self.getColumns()[colIdx].project;
+            var reqs = _.filter(value,function(r) {
+                return r.get("Project").Name === name; 
+            })
+            var val = reqs ? 
+                _.reduce( reqs, function(memo,r) { 
+                    return memo + r.get("LeafStoryPlanEstimateTotal");
+                }, 0 ) : 0;
+            return val !== 0 ? val : "";
+        },
+
+        renderComponentValuePreliminaryEstimate : function(value, metaData, record, rowIdx, colIdx, store, view) {
+            
+            // renders a component teams column
+            // var name = self.getColumns()[colIdx].text;
+            var name = self.getColumns()[colIdx].project;
             var reqs = _.filter(value,function(r) {
                 return r.get("Project").Name === name; 
             })
@@ -63,7 +79,7 @@ Ext.define("ComponentRenderer", function() {
         sumRequirementEstimates : function(reqs) {
 
             return _.reduce( reqs, function(memo,r) { 
-                return memo + app.renderer.pointValueForEstimate(r);
+                return memo + self.pointValueForEstimate(r);
             }, 0 );
         }
     }
@@ -86,6 +102,7 @@ Ext.define("GridExporter", {
     },
 
     _escapeForCSV: function(string) {
+        string = "" + string;
         if (string.match(/,/)) {
             if (!string.match(/"/)) {
                 string = '"' + string + '"';
@@ -96,8 +113,19 @@ Ext.define("GridExporter", {
         return string;
     },
 
-    _getFieldText: function(fieldData) {
+    _getFieldText: function(fieldData,record,col,index) {
         var text;
+
+        if (col && col.renderType === "ComponentEstimate") {
+            text = app.renderer.renderComponentValuePreliminaryEstimate(fieldData,0,record,0,index);
+            return text;
+        }
+
+        if (col && col.renderType === "ComponentStoryEstimate") {
+            text = app.renderer.renderComponentValuePointsEstimate (fieldData,0,record,0,index);
+            return text;
+        }
+        
 
         if (fieldData == null || fieldData == undefined) {
             text = '';
@@ -118,8 +146,8 @@ Ext.define("GridExporter", {
         return text;
     },
 
-    _getFieldTextAndEscape: function(fieldData) {
-        var string  = this._getFieldText(fieldData);
+    _getFieldTextAndEscape: function(fieldData,record,col,index) {
+        var string  = this._getFieldText(fieldData,record,col,index);
 
         return this._escapeForCSV(string);
     },
@@ -129,7 +157,7 @@ Ext.define("GridExporter", {
         var store   = grid.store;
         var data    = '';
 
-        console.log("store",store);
+        
         var that = this;
         Ext.Array.each(cols, function(col, index) {
             if (col.hidden != true) {
@@ -142,18 +170,19 @@ Ext.define("GridExporter", {
         // store.each(function(record) {
         // _.each( store.proxy.data, function(record) {
         _.each( store.data.items, function(record) {
-            console.log("rec",record);
-            //var entry       = record.getData();
+            
+            //var entry ''      = record.getData();
+            
             Ext.Array.each(cols, function(col, index) {
-                console.log("col",col,index);
+            
                 if (col.hidden != true) {
                     var fieldName   = col.dataIndex;
                     //var text        = entry[fieldName];
                     //var text        = record[fieldName];
-                    var text        = "" + record.get(fieldName);
-                    console.log("text",text);
+                    var text        = record.get(fieldName);
+                    
 
-                    data += that._getFieldTextAndEscape(text) + ',';
+                    data += that._getFieldTextAndEscape(text,record,col,index) + ',';
                 }
             });
             data += "\n";
@@ -169,7 +198,7 @@ Ext.define("GridExporter", {
 
         Ext.Array.each(cols, function(col, colIndex) {
             if (col.hidden != true) {
-                console.log('header: ', col.text);
+                
                 sheet.cells(1,colIndex + 1).value = col.text;
             }
         });
@@ -237,7 +266,6 @@ Ext.define('CustomApp', {
 
         async.map( configs, this.wsapiQuery, function(err,results) {
             // create the custom renderer
-            console.log(results[1]);
             var type = results[1][0].get("TypePath");
             app.renderer = Ext.create("ComponentRenderer", {
                 estimatevalues: results[0]
@@ -331,12 +359,24 @@ Ext.define('CustomApp', {
             if (_.indexOf(app.componentNames,name)==-1) {
                 app.componentNames.push(name);
                 app.renderer.getColumns().push( Ext.create('Ext.grid.column.Column',{
-                    text: name, 
+                    project : name,
+                    renderType : "ComponentEstimate",
+                    text: name + ' <br>Comp Est', 
                     dataIndex : "Requirements",
-                    renderer : app.renderer.renderComponentValue,
+                    renderer : app.renderer.renderComponentValuePreliminaryEstimate,
                     cls : 'component-color',
                     width : 75
                 }));
+                app.renderer.getColumns().push( Ext.create('Ext.grid.column.Column',{
+                    project : name,
+                    renderType : "ComponentStoryEstimate",
+                    text: name + ' <br>Story Est', 
+                    dataIndex : "Requirements",
+                    renderer : app.renderer.renderComponentValuePointsEstimate,
+                    cls : 'component-color',
+                    width : 75
+                }));
+
             }
         });
     },
@@ -357,14 +397,14 @@ Ext.define('CustomApp', {
             title: 'Features',
             listeners : {
                 afterrender : function() {
-                    console.log("afterRender",app.renderer.getColumns());
+                    
                     app.grid.reconfigure(app.store,app.renderer.getColumns());
                 }
             },
             store: app.store,
             columns: app.renderer.getColumns(),
-            height: 600,
-            width: 1200,
+            // height: 600,
+            // width: 1200,
         });
 
         app.add(app.grid);
