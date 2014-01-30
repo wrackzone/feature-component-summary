@@ -118,12 +118,22 @@ Ext.define('CustomApp', {
             if (_.indexOf(app.componentNames,name)==-1) {
                 app.componentNames.push(name);
                 app.renderer.getColumns().push( Ext.create('Ext.grid.column.Column',{
-                    text: name, 
+                    project : name,
+                    text: name + ' <br>Req Est', 
                     dataIndex : "Requirements",
-                    renderer : app.renderer.renderComponentValue,
+                    renderer : app.renderer.renderComponentValuePreliminaryEstimate,
                     cls : 'component-color',
                     width : 75
                 }));
+                app.renderer.getColumns().push( Ext.create('Ext.grid.column.Column',{
+                    project : name,
+                    text: name + ' <br>Story Est', 
+                    dataIndex : "Requirements",
+                    renderer : app.renderer.renderComponentValuePointsEstimate,
+                    cls : 'component-color',
+                    width : 75
+                }));
+
             }
         });
     },

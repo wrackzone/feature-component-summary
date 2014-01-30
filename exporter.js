@@ -24,9 +24,25 @@ Ext.define("ComponentRenderer", function() {
             return value ? value._refObjectName : ""; 
         },
 
-        renderComponentValue : function(value, metaData, record, rowIdx, colIdx, store, view) {
+        renderComponentValuePointsEstimate : function(value, metaData, record, rowIdx, colIdx, store, view) {
             // renders a component teams column
-            var name = self.getColumns()[colIdx].text;
+            // var name = self.getColumns()[colIdx].text;
+            var name = self.getColumns()[colIdx].project;
+            var reqs = _.filter(value,function(r) {
+                return r.get("Project").Name === name; 
+            })
+            var val = reqs ? 
+                _.reduce( reqs, function(memo,r) { 
+                    return memo + r.get("LeafStoryPlanEstimateTotal");
+                }, 0 ) : 0;
+            return val !== 0 ? val : "";
+        },
+
+        renderComponentValuePreliminaryEstimate : function(value, metaData, record, rowIdx, colIdx, store, view) {
+            // renders a component teams column
+            // var name = self.getColumns()[colIdx].text;
+            var name = self.getColumns()[colIdx].project;
+            console.log("column name",name);
             var reqs = _.filter(value,function(r) {
                 return r.get("Project").Name === name; 
             })
@@ -53,7 +69,7 @@ Ext.define("ComponentRenderer", function() {
         sumRequirementEstimates : function(reqs) {
 
             return _.reduce( reqs, function(memo,r) { 
-                return memo + app.renderer.pointValueForEstimate(r);
+                return memo + self.pointValueForEstimate(r);
             }, 0 );
         }
     }
