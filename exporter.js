@@ -13,6 +13,7 @@ Ext.define("ComponentRenderer", function() {
         constructor:function(config) {
             self = this;
             this.initConfig(config);
+            console.log("config",config);
             return this;
          },
 
@@ -38,6 +39,13 @@ Ext.define("ComponentRenderer", function() {
             return val !== 0 ? val : "";
         },
 
+        renderTotalComponentValuePreliminaryEstimate : function(value, metaData, record, rowIdx, colIdx, store, view) {
+
+            var val = value ? self.sumRequirementEstimates(value) : 0;
+            return val !== 0 ? val : "";
+
+        },
+
         renderComponentValuePreliminaryEstimate : function(value, metaData, record, rowIdx, colIdx, store, view) {
             
             // renders a component teams column
@@ -54,6 +62,7 @@ Ext.define("ComponentRenderer", function() {
             var p = _.find(self.getEstimatevalues(),function(ev) {
                 return ev.get("Name") === est._refObjectName;
             });
+            console.log("p",p,p.get("Value"));
             return p ? p.get("Value") : 0;
         },
 
@@ -113,6 +122,11 @@ Ext.define("GridExporter", {
 
         if (col && col.renderType === "ComponentStoryEstimate") {
             text = app.renderer.renderComponentValuePointsEstimate (fieldData,0,record,0,index);
+            return text;
+        }
+
+        if (col && col.renderType === "renderTotalComponentValuePreliminaryEstimate") {
+            text = app.renderer.renderTotalComponentValuePreliminaryEstimate (fieldData,0,record,0,index);
             return text;
         }
         

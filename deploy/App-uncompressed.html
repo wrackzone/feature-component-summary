@@ -251,6 +251,15 @@ Ext.define('CustomApp', {
 
         app = this;
         app.exporter = Ext.create("GridExporter");
+        app.releaseName = null;
+
+        var timeboxScope = this.getContext().getTimeboxScope();
+        if(timeboxScope!=null) {
+            var record = timeboxScope.getRecord();
+            var name = record.get('Name');
+            app.releaseName = name;
+            console.log("name",name);
+        }
 
         // read the preliminary estimate values so we can map the T-shirt size to a number
         var configs= [
@@ -266,7 +275,7 @@ Ext.define('CustomApp', {
 
         async.map( configs, this.wsapiQuery, function(err,results) {
             // create the custom renderer
-            var type = results[1][0].get("TypePath");
+            var type = results[1][0].get("TypePath");  // PortfolioItem/Initiative
             app.renderer = Ext.create("ComponentRenderer", {
                 estimatevalues: results[0]
             });
@@ -278,6 +287,19 @@ Ext.define('CustomApp', {
             // create the grid
             app.addFeatureGrid(type);
         });
+    },
+
+    onTimeboxScopeChange: function(newTimeboxScope) {
+        this.callParent(arguments);
+        console.log("release selected");
+        var timeboxScope = app.getContext().getTimeboxScope();
+        console.log("timeboxscope",timeboxScope);
+        if(timeboxScope!=null) {
+            var record = timeboxScope.getRecord();
+            var name = record.get('Name');
+            app.releaseName = name;
+            console.log("name",name);
+        }
     },
 
     // used to maintain a unique set of component team names
@@ -391,6 +413,12 @@ Ext.define('CustomApp', {
             listeners : {
                 load: app.featuresLoaded
             },
+            sorters: [
+                {
+                    property: 'Rank',
+                    direction: 'DSC'
+                }
+            ],
             fetch : true,
             autoLoad : true
         });
