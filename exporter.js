@@ -46,6 +46,30 @@ Ext.define("ComponentRenderer", function() {
 
         },
 
+        renderWorkRemaining : function(value, metaData, record, rowIdx, colIdx, store, view) {
+            var name = self.getColumns()[colIdx].project;
+            var reqs = _.filter(value,function(r) {
+                return r.get("Project").Name === name; 
+            })
+            var val = reqs ? 
+                _.reduce( reqs, function(memo,r) { 
+                    var accepted = r.get("AcceptedLeafStoryPlanEstimateTotal");
+                    accepted = _.isNull(accepted) ? 0 : accepted;
+                    return memo + r.get("LeafStoryPlanEstimateTotal") - accepted ;
+                }, 0 ) : 0;
+            return val !== 0 ? val : "";
+        },
+
+        renderTotalPrePCD : function(value, metaData, record, rowIdx, colIdx, store, view) {
+            var val = value ? 
+                _.reduce( value, function(memo,r) { 
+                    var pcd = r.get("c_PrePCDWorkMM");
+                    return memo + (pcd ? pcd : 0) ;
+                }, 0 ) : 0;
+            return val !== 0 ? val : "";
+
+        },
+
         renderComponentValuePreliminaryEstimate : function(value, metaData, record, rowIdx, colIdx, store, view) {
             
             // renders a component teams column
@@ -114,6 +138,16 @@ Ext.define("GridExporter", {
 
     _getFieldText: function(fieldData,record,col,index) {
         var text;
+
+        if (col && col.renderType === "PrePCD") {
+            text = app.renderer.renderTotalPrePCD(fieldData,0,record,0,index);
+            return text;
+        }
+
+        if (col && col.renderType === "WorkRemaining") {
+            text = app.renderer.renderWorkRemaining(fieldData,0,record,0,index);
+            return text;
+        }
 
         if (col && col.renderType === "ComponentEstimate") {
             text = app.renderer.renderComponentValuePreliminaryEstimate(fieldData,0,record,0,index);

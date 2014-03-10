@@ -7,6 +7,22 @@ Ext.define('CustomApp', {
     componentNames : [],
     // items:{ html:'<a href="https://help.rallydev.com/apps/2.0rc2/doc/">App SDK 2.0rc2 Docs</a>'},
     items: {itemId:"container",layout:"column"},
+    config: {
+        defaultSettings: {
+            parentId : ''
+        }
+    },
+
+    getSettingsFields: function() {
+        return [
+            {
+                name: 'parentId',
+                xtype: 'rallytextfield',
+                label : "Parent Portfolio Item ID"
+            }
+        ];
+    },
+
     launch: function() {
 
         app = this;
@@ -52,7 +68,7 @@ Ext.define('CustomApp', {
 
             // create the export button
             app.exportButton = app.addExportButton();
-            app.down("#container").add(app.tagpicker);
+            // app.down("#container").add(app.tagpicker);
             app.down("#container").add(app.exportButton);
             app.createGrid();
         });
@@ -74,12 +90,12 @@ Ext.define('CustomApp', {
     // defines the basic set of columns, will be extended for each component team
     addColumns : function() {
          return [
-            { text: 'ID',   dataIndex: 'FormattedID', width : 45,sortable:false },
-            { text: 'Name', dataIndex: 'Name', width : 200,sortable:false },  
-            { text: 'State', dataIndex: 'State', renderer : app.renderer.renderState,sortable:false },  
-            { text: 'Feature PEst', dataIndex: 'PreliminaryEstimate', width : 75, renderer : app.renderer.renderPreliminaryEstimate, sortable:false },
-            { text: 'S Team Story Cnt', dataIndex: 'LeafStoryCount', width : 75, sortable:false},
-            { text: 'S Team Story Pts', dataIndex: 'LeafStoryPlanEstimateTotal', width : 75,sortable:false}
+            { locked : true, text: 'ID',   dataIndex: 'FormattedID', width : 45,sortable:false },
+            { locked : true, text: 'Name', dataIndex: 'Name', width : 200,sortable:false },  
+            { locked : true, text: 'State', dataIndex: 'State', renderer : app.renderer.renderState,sortable:false },  
+            { locked : true, text: 'Feature PEst', dataIndex: 'PreliminaryEstimate', width : 85, renderer : app.renderer.renderPreliminaryEstimate, sortable:false },
+            { locked : true, text: 'S Team<br/>Story Cnt', dataIndex: 'LeafStoryCount', width : 85, sortable:false},
+            { locked : true, text: 'S Team<br/>Story Pts', dataIndex: 'LeafStoryPlanEstimateTotal', width : 85,sortable:false}
         ];
     },
 
@@ -124,6 +140,7 @@ Ext.define('CustomApp', {
             child.getCollection("Children").load({
                 fetch: true,
                 callback : function(records,operation,success) {
+                    console.log("children",records);
                     callback(null,records);
                 }
             });
@@ -149,11 +166,21 @@ Ext.define('CustomApp', {
             //renderTotalComponentValuePreliminaryEstimate
             app.renderer.getColumns().push( Ext.create('Ext.grid.column.Column',{
                 renderType : "renderTotalComponentValuePreliminaryEstimate",
-                text: name + 'Pre PCD work (MM)', 
+                text: name + 'Pre PCD<br/>work (MM)', 
+                dataIndex : "Requirements",
+                renderer : app.renderer.renderTotalPrePCD,
+                cls : 'component-color',
+                width : 85,
+                sortable:false
+            }));
+
+            app.renderer.getColumns().push( Ext.create('Ext.grid.column.Column',{
+                renderType : "renderTotalComponentValuePreliminaryEstimate",
+                text: name + 'S Team PEst', 
                 dataIndex : "Requirements",
                 renderer : app.renderer.renderTotalComponentValuePreliminaryEstimate,
                 cls : 'component-color',
-                width : 75,
+                width : 85,
                 sortable:false
             }));
         }
@@ -174,7 +201,7 @@ Ext.define('CustomApp', {
                     dataIndex : "Requirements",
                     renderer : app.renderer.renderComponentValuePreliminaryEstimate,
                     cls : 'component-color',
-                    width : 75,
+                    width : 85,
                     sortable:false
                 }));
                 app.renderer.getColumns().push( Ext.create('Ext.grid.column.Column',{
@@ -184,7 +211,17 @@ Ext.define('CustomApp', {
                     dataIndex : "Requirements",
                     renderer : app.renderer.renderComponentValuePointsEstimate,
                     cls : 'component-color',
-                    width : 75,
+                    width : 85,
+                    sortable:false
+                }));
+                app.renderer.getColumns().push( Ext.create('Ext.grid.column.Column',{
+                    project : name,
+                    renderType : "WorkRemaining",
+                    text: name + ' <br>Work Remaining', 
+                    dataIndex : "Requirements",
+                    renderer : app.renderer.renderWorkRemaining,
+                    cls : 'component-color',
+                    width : 85,
                     sortable:false
                 }));
 
@@ -193,6 +230,14 @@ Ext.define('CustomApp', {
     },
 
     createGrid : function() {
+
+        // check for configured parent id
+        var parentId = app.getSetting('parentId');
+        var filter = [];
+
+        if (parentId!="") {
+            filter = [{ property : "Parent.FormattedID", operator : "=", value : parentId}];
+        }
 
         if (_.isNull(app.store)||_.isUndefined(app.store)) {
 
@@ -210,6 +255,7 @@ Ext.define('CustomApp', {
                 ],
                 fetch : true,
                 autoLoad : true,
+                filters : filter
             });
 
             console.log("store", app.store);
