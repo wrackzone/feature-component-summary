@@ -6,7 +6,10 @@ Ext.define('CustomApp', {
     componentCls: 'app',
     componentNames : [],
     // items:{ html:'<a href="https://help.rallydev.com/apps/2.0rc2/doc/">App SDK 2.0rc2 Docs</a>'},
-    items: {itemId:"container",layout:"column"},
+    items: {
+        itemId : "container",
+        layout : "column"
+    },
     config: {
         defaultSettings: {
             parentId : ''
@@ -94,8 +97,8 @@ Ext.define('CustomApp', {
             { locked : true, text: 'Name', dataIndex: 'Name', width : 200,sortable:false },  
             { locked : true, text: 'State', dataIndex: 'State', renderer : app.renderer.renderState,sortable:false },  
             { locked : true, text: 'Feature PEst', dataIndex: 'PreliminaryEstimate', width : 85, renderer : app.renderer.renderPreliminaryEstimate, sortable:false },
-            { locked : true, text: 'S Team<br/>Story Cnt', dataIndex: 'LeafStoryCount', width : 85, sortable:false},
-            { locked : true, text: 'S Team<br/>Story Pts', dataIndex: 'LeafStoryPlanEstimateTotal', width : 85,sortable:false}
+            { locked : true, text: 'S Team<br/>Story Pts', dataIndex: 'LeafStoryPlanEstimateTotal', width : 85,sortable:false},
+            { locked : true, text: 'S Team<br/>Story Cnt', dataIndex: 'LeafStoryCount', width : 85, sortable:false}
         ];
     },
 
@@ -140,7 +143,6 @@ Ext.define('CustomApp', {
             child.getCollection("Children").load({
                 fetch: true,
                 callback : function(records,operation,success) {
-                    console.log("children",records);
                     callback(null,records);
                 }
             });
@@ -171,7 +173,9 @@ Ext.define('CustomApp', {
                 renderer : app.renderer.renderTotalPrePCD,
                 cls : 'component-color',
                 width : 85,
-                sortable:false
+                sortable:false,
+                locked : true,
+                align : 'right'
             }));
 
             app.renderer.getColumns().push( Ext.create('Ext.grid.column.Column',{
@@ -181,7 +185,9 @@ Ext.define('CustomApp', {
                 renderer : app.renderer.renderTotalComponentValuePreliminaryEstimate,
                 cls : 'component-color',
                 width : 85,
-                sortable:false
+                sortable:false,
+                locked : true,
+                align : 'right'
             }));
         }
 
@@ -202,7 +208,8 @@ Ext.define('CustomApp', {
                     renderer : app.renderer.renderComponentValuePreliminaryEstimate,
                     cls : 'component-color',
                     width : 85,
-                    sortable:false
+                    sortable:false,
+                    align : 'right'
                 }));
                 app.renderer.getColumns().push( Ext.create('Ext.grid.column.Column',{
                     project : name,
@@ -212,7 +219,8 @@ Ext.define('CustomApp', {
                     renderer : app.renderer.renderComponentValuePointsEstimate,
                     cls : 'component-color',
                     width : 85,
-                    sortable:false
+                    sortable:false,
+                    align : 'right'
                 }));
                 app.renderer.getColumns().push( Ext.create('Ext.grid.column.Column',{
                     project : name,
@@ -222,7 +230,8 @@ Ext.define('CustomApp', {
                     renderer : app.renderer.renderWorkRemaining,
                     cls : 'component-color',
                     width : 85,
-                    sortable:false
+                    sortable:false,
+                    align : 'right'
                 }));
 
             }
@@ -258,7 +267,7 @@ Ext.define('CustomApp', {
                 filters : filter
             });
 
-            console.log("store", app.store);
+            // console.log("store", app.store);
         }
 
         app.grid = Ext.create('Ext.grid.Panel', {

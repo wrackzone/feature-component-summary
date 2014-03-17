@@ -13,9 +13,18 @@ Ext.define("ComponentRenderer", function() {
         constructor:function(config) {
             self = this;
             this.initConfig(config);
-            console.log("config",config);
+            // console.log("config",config);
             return this;
          },
+
+        // have to add the colIdx to the count of locked columns
+        offsetColumnIndex : function(col,colIdx) {
+            var cols = _.filter(col.getColumns(),function(c) { 
+                return c.locked == true;
+            });
+
+            return cols.length + colIdx;
+        },
 
         renderPreliminaryEstimate : function(value) { 
             return value ? value._refObjectName + " (" + self.pointValue(value)+")" : ""; 
@@ -25,10 +34,11 @@ Ext.define("ComponentRenderer", function() {
             return value ? value._refObjectName : ""; 
         },
 
+
+
         renderComponentValuePointsEstimate : function(value, metaData, record, rowIdx, colIdx, store, view) {
-            // renders a component teams column
-            // var name = self.getColumns()[colIdx].text;
-            var name = self.getColumns()[colIdx].project;
+            var idx = self.offsetColumnIndex(self,colIdx);
+            var name = self.getColumns()[idx].project;
             var reqs = _.filter(value,function(r) {
                 return r.get("Project").Name === name; 
             })
@@ -47,7 +57,8 @@ Ext.define("ComponentRenderer", function() {
         },
 
         renderWorkRemaining : function(value, metaData, record, rowIdx, colIdx, store, view) {
-            var name = self.getColumns()[colIdx].project;
+            var idx = self.offsetColumnIndex(self,colIdx);
+            var name = self.getColumns()[idx].project;
             var reqs = _.filter(value,function(r) {
                 return r.get("Project").Name === name; 
             })
@@ -71,10 +82,8 @@ Ext.define("ComponentRenderer", function() {
         },
 
         renderComponentValuePreliminaryEstimate : function(value, metaData, record, rowIdx, colIdx, store, view) {
-            
-            // renders a component teams column
-            // var name = self.getColumns()[colIdx].text;
-            var name = self.getColumns()[colIdx].project;
+            var idx = self.offsetColumnIndex(self,colIdx);
+            var name = self.getColumns()[idx].project;
             var reqs = _.filter(value,function(r) {
                 return r.get("Project").Name === name; 
             })
@@ -86,7 +95,7 @@ Ext.define("ComponentRenderer", function() {
             var p = _.find(self.getEstimatevalues(),function(ev) {
                 return ev.get("Name") === est._refObjectName;
             });
-            console.log("p",p,p.get("Value"));
+            // console.log("p",p,p.get("Value"));
             return p ? p.get("Value") : 0;
         },
 
@@ -145,17 +154,18 @@ Ext.define("GridExporter", {
         }
 
         if (col && col.renderType === "WorkRemaining") {
-            text = app.renderer.renderWorkRemaining(fieldData,0,record,0,index);
+            text = app.renderer.renderWorkRemaining(fieldData,0,record,0,index-8);
             return text;
         }
 
         if (col && col.renderType === "ComponentEstimate") {
-            text = app.renderer.renderComponentValuePreliminaryEstimate(fieldData,0,record,0,index);
+            text = app.renderer.renderComponentValuePreliminaryEstimate(fieldData,0,record,0,index-8);
             return text;
         }
 
         if (col && col.renderType === "ComponentStoryEstimate") {
-            text = app.renderer.renderComponentValuePointsEstimate (fieldData,0,record,0,index);
+            
+            text = app.renderer.renderComponentValuePointsEstimate (fieldData,0,record,0,index-8);
             return text;
         }
 
