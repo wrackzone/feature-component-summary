@@ -209,7 +209,10 @@ Ext.define("GridExporter", {
         var that = this;
         Ext.Array.each(cols, function(col, index) {
             if (col.hidden != true) {
-                data += that._getFieldTextAndEscape(col.text) + ',';
+                // fix the issue with the "SYLK" warning in excel by prepending "Item" to the ID column
+                var colLabel = (index === 0 ? "Item " : "") +col.text;
+                colLabel = colLabel.replace(/<br\/?>/,'');
+                data += that._getFieldTextAndEscape(colLabel) + ',';
             }
         });
         data += "\n";
