@@ -129,7 +129,8 @@ Ext.define("GridExporter", {
 
         } else {
             var data = this._getCSV(grid);
-            window.location = 'data:text/csv;charset=utf8,' + encodeURIComponent(data);
+            // window.location = 'data:text/csv;charset=utf8,' + encodeURIComponent(data);
+            return "<a href='data:text/csv;charset=utf8," + encodeURIComponent(data) + "' download='export.csv'>Click to download file</a>";
         }
     },
 

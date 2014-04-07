@@ -6,10 +6,22 @@ Ext.define('CustomApp', {
     componentCls: 'app',
     componentNames : [],
     // items:{ html:'<a href="https://help.rallydev.com/apps/2.0rc2/doc/">App SDK 2.0rc2 Docs</a>'},
-    items: {
-        itemId : "container",
-        layout : "column"
-    },
+    items: [ 
+        {   itemId : "exportContainer",
+                layout : "column",
+                items : [ 
+                    {
+                        itemId : "exportButton", margin : 10
+                    },
+                    {
+                        itemId : "exportLink", margin : "12 0 0 10"
+                    }
+                ]
+        },
+        {
+            itemId : "container", layout : "column"
+        }
+    ],
     config: {
         defaultSettings: {
             parentId : '',
@@ -78,7 +90,7 @@ Ext.define('CustomApp', {
             // create the export button
             app.exportButton = app.addExportButton();
             // app.down("#container").add(app.tagpicker);
-            app.down("#container").add(app.exportButton);
+            app.down("#exportButton").add(app.exportButton);
             app.createGrid();
         });
     },
@@ -112,10 +124,12 @@ Ext.define('CustomApp', {
     addExportButton : function () {
         var button = Ext.create('Rally.ui.Button', {
             text: 'Export',
-            margin : 10,
             handler: function() {
                 //Ext.Msg.alert('Button', 'You clicked me');
-                app.exporter.exportGrid(app.grid);
+                var link = app.down("#exportLink");
+                console.log("link",link);
+                link.update(app.exporter.exportGrid(app.grid));
+                //app.exporter.exportGrid(app.grid);
             }
         });
         //this.add(button);
@@ -296,6 +310,7 @@ Ext.define('CustomApp', {
             title: 'Features',
             listeners : {
                 afterrender : function() {
+                    console.log("grid rendered");
                 }
             },
             store: app.store,
