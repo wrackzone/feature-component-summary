@@ -12,7 +12,8 @@ Ext.define('CustomApp', {
     },
     config: {
         defaultSettings: {
-            parentId : ''
+            parentId : '',
+            showStoryColumns : false
         }
     },
 
@@ -22,6 +23,11 @@ Ext.define('CustomApp', {
                 name: 'parentId',
                 xtype: 'rallytextfield',
                 label : "Parent Portfolio Item ID"
+            },
+            {
+                name: 'showStoryColumns',
+                xtype: 'rallycheckboxfield',
+                label: 'Show Story Columns'
             }
         ];
     },
@@ -166,17 +172,17 @@ Ext.define('CustomApp', {
     addComponentTotalColumn : function() {
         if (app.componentNames.length===0) {
             //renderTotalComponentValuePreliminaryEstimate
-            app.renderer.getColumns().push( Ext.create('Ext.grid.column.Column',{
-                renderType : "renderTotalComponentValuePreliminaryEstimate",
-                text: name + 'Pre PCD<br/>work (MM)', 
-                dataIndex : "Requirements",
-                renderer : app.renderer.renderTotalPrePCD,
-                cls : 'component-color',
-                width : 85,
-                sortable:false,
-                locked : true,
-                align : 'right'
-            }));
+            // app.renderer.getColumns().push( Ext.create('Ext.grid.column.Column',{
+            //     renderType : "renderTotalComponentValuePreliminaryEstimate",
+            //     text: name + 'Pre PCD<br/>work (MM)', 
+            //     dataIndex : "Requirements",
+            //     renderer : app.renderer.renderTotalPrePCD,
+            //     cls : 'component-color',
+            //     width : 85,
+            //     sortable:false,
+            //     locked : true,
+            //     align : 'right'
+            // }));
 
             app.renderer.getColumns().push( Ext.create('Ext.grid.column.Column',{
                 renderType : "renderTotalComponentValuePreliminaryEstimate",
@@ -211,28 +217,32 @@ Ext.define('CustomApp', {
                     sortable:false,
                     align : 'right'
                 }));
-                app.renderer.getColumns().push( Ext.create('Ext.grid.column.Column',{
-                    project : name,
-                    renderType : "ComponentStoryEstimate",
-                    text: name + ' <br>Team StPts', 
-                    dataIndex : "Requirements",
-                    renderer : app.renderer.renderComponentValuePointsEstimate,
-                    cls : 'component-color',
-                    width : 85,
-                    sortable:false,
-                    align : 'right'
-                }));
-                app.renderer.getColumns().push( Ext.create('Ext.grid.column.Column',{
-                    project : name,
-                    renderType : "WorkRemaining",
-                    text: name + ' <br>Work Remaining', 
-                    dataIndex : "Requirements",
-                    renderer : app.renderer.renderWorkRemaining,
-                    cls : 'component-color',
-                    width : 85,
-                    sortable:false,
-                    align : 'right'
-                }));
+
+                // only show these two columns if configured.
+                if (app.showStoryColumns===true) {
+                    app.renderer.getColumns().push( Ext.create('Ext.grid.column.Column',{
+                        project : name,
+                        renderType : "ComponentStoryEstimate",
+                        text: name + ' <br>Team StPts', 
+                        dataIndex : "Requirements",
+                        renderer : app.renderer.renderComponentValuePointsEstimate,
+                        cls : 'component-color',
+                        width : 85,
+                        sortable:false,
+                        align : 'right'
+                    }));
+                    app.renderer.getColumns().push( Ext.create('Ext.grid.column.Column',{
+                        project : name,
+                        renderType : "WorkRemaining",
+                        text: name + ' <br>Work Remaining', 
+                        dataIndex : "Requirements",
+                        renderer : app.renderer.renderWorkRemaining,
+                        cls : 'component-color',
+                        width : 85,
+                        sortable:false,
+                        align : 'right'
+                    }));
+                }
 
             }
         });
@@ -241,13 +251,25 @@ Ext.define('CustomApp', {
     createGrid : function() {
 
         // check for configured parent id
-        var parentId = app.getSetting('parentId');
+        var parentIds = app.getSetting('parentId');
+        app.showStoryColumns = app.getSetting('showStoryColumns');
         var filter = [];
 
-        if (parentId!="") {
-            filter = [{ property : "Parent.FormattedID", operator : "=", value : parentId}];
-        }
+        // support filtering the features by a comma listed set of possible 
+        // parent portfolio items.
+        _.each(parentIds.split(","), function(parentId,i) {
+            if (parentId!=="") {
+                var f = Ext.create('Rally.data.wsapi.Filter', {
+                    property: 'Parent.FormattedID', operator: '=', value: parentId.replace(/^\s+|\s+$/g,'') } 
+                );
+                filter = (i==0) ? f : filter.or(f);
+            }
+        });
 
+        // if (parentId!="") {
+        //     filter = [{ property : "Parent.FormattedID", operator : "=", value : parentId}];
+        // }
+        console.log("filter:",filter.toString());
         if (_.isNull(app.store)||_.isUndefined(app.store)) {
 
             app.store = Ext.create('Rally.data.WsapiDataStore', {
