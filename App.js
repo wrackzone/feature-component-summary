@@ -280,6 +280,12 @@ Ext.define('CustomApp', {
             }
         });
 
+        var x = Ext.create('Rally.data.wsapi.Filter', {
+                    property: 'FormattedID', operator: '=', value: 'F180' } 
+        ); 
+
+        
+
         // if (parentId!="") {
         //     filter = [{ property : "Parent.FormattedID", operator : "=", value : parentId}];
         // }
@@ -300,7 +306,7 @@ Ext.define('CustomApp', {
                 ],
                 fetch : true,
                 autoLoad : true,
-                filters : filter
+                filters : [filter,x]
             });
 
             // console.log("store", app.store);

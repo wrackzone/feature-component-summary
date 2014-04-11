@@ -23,7 +23,6 @@ Ext.define("ComponentRenderer", function() {
         constructor:function(config) {
             self = this;
             this.initConfig(config);
-            // console.log("config",config);
             return this;
          },
 
@@ -60,10 +59,8 @@ Ext.define("ComponentRenderer", function() {
         },
 
         renderTotalComponentValuePreliminaryEstimate : function(value, metaData, record, rowIdx, colIdx, store, view) {
-
             var val = value ? self.sumRequirementEstimates(value) : 0;
             return val !== 0 ? val : "";
-
         },
 
         renderWorkRemaining : function(value, metaData, record, rowIdx, colIdx, store, view) {
@@ -105,7 +102,6 @@ Ext.define("ComponentRenderer", function() {
             var p = _.find(self.getEstimatevalues(),function(ev) {
                 return ev.get("Name") === est._refObjectName;
             });
-            // console.log("p",p,p.get("Value"));
             return p ? p.get("Value") : 0;
         },
 
@@ -165,18 +161,20 @@ Ext.define("GridExporter", {
         }
 
         if (col && col.renderType === "WorkRemaining") {
-            text = app.renderer.renderWorkRemaining(fieldData,0,record,0,index-8);
+            // text = app.renderer.renderWorkRemaining(fieldData,0,record,0,index-8);
+            text = app.renderer.renderWorkRemaining(fieldData,0,record,0,index - this.fixedCols);
             return text;
         }
 
         if (col && col.renderType === "ComponentEstimate") {
-            text = app.renderer.renderComponentValuePreliminaryEstimate(fieldData,0,record,0,index-8);
+            text = app.renderer.renderComponentValuePreliminaryEstimate(fieldData,0,record,0,index- this.fixedCols);
             return text;
         }
 
         if (col && col.renderType === "ComponentStoryEstimate") {
             
-            text = app.renderer.renderComponentValuePointsEstimate (fieldData,0,record,0,index-8);
+            // text = app.renderer.renderComponentValuePointsEstimate (fieldData,0,record,0,index-8);
+            text = app.renderer.renderComponentValuePointsEstimate (fieldData,0,record,0,index-this.fixedCols);
             return text;
         }
 
@@ -211,12 +209,20 @@ Ext.define("GridExporter", {
         return this._escapeForCSV(string);
     },
 
+    // have to add the colIdx to the count of locked columns
+    fixedColumnCount : function(columns) {
+        var cols = _.filter(columns,function(c) { 
+            return c!==undefined && c!==null && c.locked == true;
+        });
+        return cols.length;
+    },
+
     _getCSV: function (grid) {
         var cols    = grid.columns;
         var store   = grid.store;
         var data    = '';
+        this.fixedCols = this.fixedColumnCount(cols);
 
-        
         var that = this;
         Ext.Array.each(cols, function(col, index) {
             if (col.hidden != true) {
@@ -228,22 +234,12 @@ Ext.define("GridExporter", {
         });
         data += "\n";
 
-
-        // store.each(function(record) {
-        // _.each( store.proxy.data, function(record) {
         _.each( store.data.items, function(record) {
-            
-            //var entry ''      = record.getData();
-            
             Ext.Array.each(cols, function(col, index) {
             
                 if (col.hidden != true) {
                     var fieldName   = col.dataIndex;
-                    //var text        = entry[fieldName];
-                    //var text        = record[fieldName];
                     var text        = record.get(fieldName);
-                    
-
                     data += that._getFieldTextAndEscape(text,record,col,index) + ',';
                 }
             });
@@ -584,6 +580,12 @@ Ext.define('CustomApp', {
             }
         });
 
+        var x = Ext.create('Rally.data.wsapi.Filter', {
+                    property: 'FormattedID', operator: '=', value: 'F180' } 
+        ); 
+
+        
+
         // if (parentId!="") {
         //     filter = [{ property : "Parent.FormattedID", operator : "=", value : parentId}];
         // }
@@ -604,7 +606,7 @@ Ext.define('CustomApp', {
                 ],
                 fetch : true,
                 autoLoad : true,
-                filters : filter
+                filters : [filter,x]
             });
 
             // console.log("store", app.store);
