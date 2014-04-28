@@ -213,11 +213,59 @@ Ext.define("GridExporter", {
         var data    = '';
         this.fixedCols = this.fixedColumnCount(cols);
 
+        // creates a sorted index for the header fields, complicated because 
+        // we dont want to sort the fixed columns.
+        var createHeaderIndex = function( cols, fixedColsCount ) {
+            console.log("fixedColsCount",fixedColsCount);
+
+            var headerIndex = _.object( _.pluck(cols,"text"), _.range(cols.length));
+            console.log("headerIndex",headerIndex);
+
+            var keys = _.keys(headerIndex);
+            console.log("keys",keys);
+
+            var fixed = keys.slice(0,fixedColsCount);
+            console.log("fixed",fixed);
+
+            var variable = keys.slice(fixedColsCount).sort();
+            console.log("variable",variable);
+
+            var sortedKeys = _.union(fixed,variable);
+
+            console.log("sortedKeys",sortedKeys);
+
+            var values = _.map( sortedKeys, function (key) {
+                return headerIndex[key];
+            });
+
+            console.log("values",values);
+
+            var index = _.object( sortedKeys, values);
+            console.log("index",index);
+            
+            return index;
+
+        };
+
+        var sortCols = function( cols, fixedColsCount) {
+
+            var fixed = cols.slice(0,fixedColsCount);
+            var variable = cols.slice(fixedColsCount);
+            variable = _.sortBy( variable, "text");
+            var sortedCols = _.union( fixed,variable);
+            return sortedCols;
+
+        };
+
+        var headerIndex = createHeaderIndex(cols, this.fixedCols);
+        var sortedCols = sortCols(cols,this.fixedCols);
+
         var that = this;
-        Ext.Array.each(cols, function(col, index) {
+        // Ext.Array.each(cols, function(col, index) {
+        Ext.Array.each(sortedCols, function(col, index) { 
             if (col.hidden != true) {
                 // fix the issue with the "SYLK" warning in excel by prepending "Item" to the ID column
-                var colLabel = (index === 0 ? "Item " : "") +col.text;
+                var colLabel = (index === 0 ? "Item " : "") + col.text;
                 colLabel = colLabel.replace(/<br\/?>/,'');
                 data += that._getFieldTextAndEscape(colLabel) + ',';
             }
@@ -225,7 +273,11 @@ Ext.define("GridExporter", {
         data += "\n";
 
         _.each( store.data.items, function(record) {
-            Ext.Array.each(cols, function(col, index) {
+
+            // Ext.Array.each(cols, function(col, index) {
+            Ext.Array.each(sortedCols, function(col) {
+
+                var index = headerIndex[col.text];
             
                 if (col.hidden != true) {
                     var fieldName   = col.dataIndex;

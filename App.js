@@ -49,16 +49,6 @@ Ext.define('CustomApp', {
         app = this;
         app.exporter = Ext.create("GridExporter");
 
-        app.tagpicker = Ext.create('Rally.ui.picker.TagPicker', { 
-            listeners : {
-                collapse : function(a,b,c) {
-                    app.selectedTags = this.getValue();
-                    app.tagsSelected();
-                }
-            },
-            margin : 10
-        });
-
         // read the preliminary estimate values so we can map the T-shirt size to a number
         var configs= [
             {   model : "PreliminaryEstimate", 
@@ -185,18 +175,6 @@ Ext.define('CustomApp', {
 
     addComponentTotalColumn : function() {
         if (app.componentNames.length===0) {
-            //renderTotalComponentValuePreliminaryEstimate
-            // app.renderer.getColumns().push( Ext.create('Ext.grid.column.Column',{
-            //     renderType : "renderTotalComponentValuePreliminaryEstimate",
-            //     text: name + 'Pre PCD<br/>work (MM)', 
-            //     dataIndex : "Requirements",
-            //     renderer : app.renderer.renderTotalPrePCD,
-            //     cls : 'component-color',
-            //     width : 85,
-            //     sortable:false,
-            //     locked : true,
-            //     align : 'right'
-            // }));
 
             app.renderer.getColumns().push( Ext.create('Ext.grid.column.Column',{
                 renderType : "renderTotalComponentValuePreliminaryEstimate",
@@ -218,6 +196,7 @@ Ext.define('CustomApp', {
 
         var projectNames = _.uniq(_.map(requirements,function(r) { return r.get("Project").Name}));
         _.each(projectNames,function(name) {
+
             if (_.indexOf(app.componentNames,name)==-1) {
                 app.componentNames.push(name);
                 app.renderer.getColumns().push( Ext.create('Ext.grid.column.Column',{
@@ -257,7 +236,6 @@ Ext.define('CustomApp', {
                         align : 'right'
                     }));
                 }
-
             }
         });
     },
@@ -280,9 +258,6 @@ Ext.define('CustomApp', {
             }
         });
 
-        // if (parentId!="") {
-        //     filter = [{ property : "Parent.FormattedID", operator : "=", value : parentId}];
-        // }
         console.log("filter:",filter.toString());
         if (_.isNull(app.store)||_.isUndefined(app.store)) {
 
@@ -302,8 +277,6 @@ Ext.define('CustomApp', {
                 autoLoad : true,
                 filters : filter
             });
-
-            // console.log("store", app.store);
         }
 
         app.grid = Ext.create('Ext.grid.Panel', {
@@ -319,28 +292,5 @@ Ext.define('CustomApp', {
 
         app.add(app.grid);
 
-    },
-
-    tagsSelected : function() {
-
-        var filter = null;
-
-        _.each( app.selectedTags,function(tag,x) {
-
-            filter = x===0 ?
-                Ext.create("Rally.data.wsapi.Filter", {
-                    property : "Tags.Name", operator : "=", value : tag.get("Name")
-                }) :
-                filter.or(
-                Ext.create("Rally.data.wsapi.Filter", {
-                    property : "Tags.Name", operator : "=", value : tag.get("Name")
-                })
-                );
-        });
-
-        console.log("filter",filter.toString(),app.featureType);
-
-
     }
-    
 });

@@ -223,11 +223,59 @@ Ext.define("GridExporter", {
         var data    = '';
         this.fixedCols = this.fixedColumnCount(cols);
 
+        // creates a sorted index for the header fields, complicated because 
+        // we dont want to sort the fixed columns.
+        var createHeaderIndex = function( cols, fixedColsCount ) {
+            console.log("fixedColsCount",fixedColsCount);
+
+            var headerIndex = _.object( _.pluck(cols,"text"), _.range(cols.length));
+            console.log("headerIndex",headerIndex);
+
+            var keys = _.keys(headerIndex);
+            console.log("keys",keys);
+
+            var fixed = keys.slice(0,fixedColsCount);
+            console.log("fixed",fixed);
+
+            var variable = keys.slice(fixedColsCount).sort();
+            console.log("variable",variable);
+
+            var sortedKeys = _.union(fixed,variable);
+
+            console.log("sortedKeys",sortedKeys);
+
+            var values = _.map( sortedKeys, function (key) {
+                return headerIndex[key];
+            });
+
+            console.log("values",values);
+
+            var index = _.object( sortedKeys, values);
+            console.log("index",index);
+            
+            return index;
+
+        };
+
+        var sortCols = function( cols, fixedColsCount) {
+
+            var fixed = cols.slice(0,fixedColsCount);
+            var variable = cols.slice(fixedColsCount);
+            variable = _.sortBy( variable, "text");
+            var sortedCols = _.union( fixed,variable);
+            return sortedCols;
+
+        };
+
+        var headerIndex = createHeaderIndex(cols, this.fixedCols);
+        var sortedCols = sortCols(cols,this.fixedCols);
+
         var that = this;
-        Ext.Array.each(cols, function(col, index) {
+        // Ext.Array.each(cols, function(col, index) {
+        Ext.Array.each(sortedCols, function(col, index) { 
             if (col.hidden != true) {
                 // fix the issue with the "SYLK" warning in excel by prepending "Item" to the ID column
-                var colLabel = (index === 0 ? "Item " : "") +col.text;
+                var colLabel = (index === 0 ? "Item " : "") + col.text;
                 colLabel = colLabel.replace(/<br\/?>/,'');
                 data += that._getFieldTextAndEscape(colLabel) + ',';
             }
@@ -235,7 +283,11 @@ Ext.define("GridExporter", {
         data += "\n";
 
         _.each( store.data.items, function(record) {
-            Ext.Array.each(cols, function(col, index) {
+
+            // Ext.Array.each(cols, function(col, index) {
+            Ext.Array.each(sortedCols, function(col) {
+
+                var index = headerIndex[col.text];
             
                 if (col.hidden != true) {
                     var fieldName   = col.dataIndex;
@@ -348,16 +400,6 @@ Ext.define('CustomApp', {
 
         app = this;
         app.exporter = Ext.create("GridExporter");
-
-        app.tagpicker = Ext.create('Rally.ui.picker.TagPicker', { 
-            listeners : {
-                collapse : function(a,b,c) {
-                    app.selectedTags = this.getValue();
-                    app.tagsSelected();
-                }
-            },
-            margin : 10
-        });
 
         // read the preliminary estimate values so we can map the T-shirt size to a number
         var configs= [
@@ -485,18 +527,6 @@ Ext.define('CustomApp', {
 
     addComponentTotalColumn : function() {
         if (app.componentNames.length===0) {
-            //renderTotalComponentValuePreliminaryEstimate
-            // app.renderer.getColumns().push( Ext.create('Ext.grid.column.Column',{
-            //     renderType : "renderTotalComponentValuePreliminaryEstimate",
-            //     text: name + 'Pre PCD<br/>work (MM)', 
-            //     dataIndex : "Requirements",
-            //     renderer : app.renderer.renderTotalPrePCD,
-            //     cls : 'component-color',
-            //     width : 85,
-            //     sortable:false,
-            //     locked : true,
-            //     align : 'right'
-            // }));
 
             app.renderer.getColumns().push( Ext.create('Ext.grid.column.Column',{
                 renderType : "renderTotalComponentValuePreliminaryEstimate",
@@ -518,6 +548,7 @@ Ext.define('CustomApp', {
 
         var projectNames = _.uniq(_.map(requirements,function(r) { return r.get("Project").Name}));
         _.each(projectNames,function(name) {
+
             if (_.indexOf(app.componentNames,name)==-1) {
                 app.componentNames.push(name);
                 app.renderer.getColumns().push( Ext.create('Ext.grid.column.Column',{
@@ -557,7 +588,6 @@ Ext.define('CustomApp', {
                         align : 'right'
                     }));
                 }
-
             }
         });
     },
@@ -580,9 +610,6 @@ Ext.define('CustomApp', {
             }
         });
 
-        // if (parentId!="") {
-        //     filter = [{ property : "Parent.FormattedID", operator : "=", value : parentId}];
-        // }
         console.log("filter:",filter.toString());
         if (_.isNull(app.store)||_.isUndefined(app.store)) {
 
@@ -602,8 +629,6 @@ Ext.define('CustomApp', {
                 autoLoad : true,
                 filters : filter
             });
-
-            // console.log("store", app.store);
         }
 
         app.grid = Ext.create('Ext.grid.Panel', {
@@ -619,30 +644,7 @@ Ext.define('CustomApp', {
 
         app.add(app.grid);
 
-    },
-
-    tagsSelected : function() {
-
-        var filter = null;
-
-        _.each( app.selectedTags,function(tag,x) {
-
-            filter = x===0 ?
-                Ext.create("Rally.data.wsapi.Filter", {
-                    property : "Tags.Name", operator : "=", value : tag.get("Name")
-                }) :
-                filter.or(
-                Ext.create("Rally.data.wsapi.Filter", {
-                    property : "Tags.Name", operator : "=", value : tag.get("Name")
-                })
-                );
-        });
-
-        console.log("filter",filter.toString(),app.featureType);
-
-
     }
-    
 });
 
 
