@@ -62,6 +62,12 @@ Ext.define('CustomApp', {
             {   model : "TypeDefinition",
                 fetch : true,
                 filters : [ { property:"Ordinal", operator:"=", value:0} ]
+            },
+            {
+                model : "Project",
+                fetch : ["ObjectID"],
+                filters : [ {property:"State",operator:"=", value : "Open"}],
+                context : { project : null }
             }
 
         ];
@@ -71,6 +77,8 @@ Ext.define('CustomApp', {
             // var type = results[1][0].get("TypePath");  // PortfolioItem/Initiative
             app.featureType = results[1][0].get("TypePath"); // lowest level item
             app.releaseType = results[2][0].get("TypePath"); // lowest level item
+            app.openProjectIDs = _.map( results[3],function(project) { return project.get("ObjectID");});
+            console.log("closed projects:",app.openProjectIDs);
             app.renderer = Ext.create("ComponentRenderer", {
                 estimatevalues: results[0]
             });
@@ -128,12 +136,15 @@ Ext.define('CustomApp', {
 
     // generic function to perform a web services query    
     wsapiQuery : function( config , callback ) {
+        console.log("config:",config,_.contains(_.keys(config),"context"));
         Ext.create('Rally.data.WsapiDataStore', {
             autoLoad : true,
             limit : "Infinity",
             model : config.model,
             fetch : config.fetch,
             filters : config.filters,
+            // context : _.contains(_.keys(config),"context") ? config.context : {},
+            context : {project:null},
             listeners : {
                 scope : this,
                 load : function(store, data) {
@@ -153,6 +164,11 @@ Ext.define('CustomApp', {
             child.getCollection("Children").load({
                 fetch: true,
                 callback : function(records,operation,success) {
+                    // filter to items only in open projects
+                    records = _.filter(records,function(record){ 
+                        return _.contains(app.openProjectIDs, record.get("Project").ObjectID);
+                    });
+                    // console.log("records",records);
                     callback(null,records);
                 }
             });
