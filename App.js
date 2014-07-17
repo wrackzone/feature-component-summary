@@ -111,6 +111,7 @@ Ext.define('CustomApp', {
          return [
             { locked : true, text: 'ID',   dataIndex: 'FormattedID', width : 45,sortable:false },
             { locked : true, text: 'Name', dataIndex: 'Name', width : 200,sortable:false },  
+            { locked : true, text: 'AnchorCoreOther', dataIndex: 'c_AnchorCoreOther', width : 65,sortable:false },  
             { locked : true, text: 'State', dataIndex: 'State', renderer : app.renderer.renderState,sortable:false },  
             { locked : true, text: 'Feature PEst', dataIndex: 'PreliminaryEstimate', width : 85, renderer : app.renderer.renderPreliminaryEstimate, sortable:false },
             { locked : true, text: 'S Team<br/>Story Pts', dataIndex: 'LeafStoryPlanEstimateTotal', width : 85,sortable:false},
