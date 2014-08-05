@@ -25,8 +25,7 @@ Ext.define('CustomApp', {
     config: {
         defaultSettings: {
             parentId : '',
-            showStoryColumns : true,
-            includeAcceptedStoryPoints : false
+            showStoryColumns : true
         }
     },
 
@@ -41,11 +40,6 @@ Ext.define('CustomApp', {
                 name: 'showStoryColumns',
                 xtype: 'rallycheckboxfield',
                 label: 'Show Story Columns'
-            },
-            {
-                name: 'includeAcceptedStoryPoints',
-                xtype: 'rallycheckboxfield',
-                label: 'Include Accepted Points in Story Points Totals'
             }
         ];
     },
