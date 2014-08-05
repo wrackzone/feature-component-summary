@@ -377,7 +377,8 @@ Ext.define('CustomApp', {
     config: {
         defaultSettings: {
             parentId : '',
-            showStoryColumns : false
+            showStoryColumns : true,
+            includeAcceptedStoryPoints : false
         }
     },
 
@@ -392,6 +393,11 @@ Ext.define('CustomApp', {
                 name: 'showStoryColumns',
                 xtype: 'rallycheckboxfield',
                 label: 'Show Story Columns'
+            },
+            {
+                name: 'includeAcceptedStoryPoints',
+                xtype: 'rallycheckboxfield',
+                label: 'Include Accepted Points in Story Points Totals'
             }
         ];
     },
@@ -566,33 +572,37 @@ Ext.define('CustomApp', {
         var projectNames = _.uniq(_.map(requirements,function(r) { return r.get("Project").Name}));
         _.each(projectNames,function(name) {
 
-            if (_.indexOf(app.componentNames,name)==-1) {
+            if (_.indexOf(app.componentNames,name)==-1 ) {
                 app.componentNames.push(name);
-                app.renderer.getColumns().push( Ext.create('Ext.grid.column.Column',{
-                    project : name,
-                    renderType : "ComponentEstimate",
-                    text: name + ' <br>Team PEst', 
-                    dataIndex : "Requirements",
-                    renderer : app.renderer.renderComponentValuePreliminaryEstimate,
-                    cls : 'component-color',
-                    width : 85,
-                    sortable:false,
-                    align : 'right'
-                }));
-
-                // only show these two columns if configured.
-                if (app.showStoryColumns===true) {
+                
+                if (app.showStoryColumns===false) {
                     app.renderer.getColumns().push( Ext.create('Ext.grid.column.Column',{
                         project : name,
-                        renderType : "ComponentStoryEstimate",
-                        text: name + ' <br>Team StPts', 
+                        renderType : "ComponentEstimate",
+                        text: name + ' <br>Team PEst', 
                         dataIndex : "Requirements",
-                        renderer : app.renderer.renderComponentValuePointsEstimate,
+                        renderer : app.renderer.renderComponentValuePreliminaryEstimate,
                         cls : 'component-color',
                         width : 85,
                         sortable:false,
                         align : 'right'
                     }));
+                }
+
+                // only show these two columns if configured.
+                if (app.showStoryColumns===true) {
+                    // no longer wants this column. 8/5/2014
+                    // app.renderer.getColumns().push( Ext.create('Ext.grid.column.Column',{
+                    //     project : name,
+                    //     renderType : "ComponentStoryEstimate",
+                    //     text: name + ' <br>Team StPts', 
+                    //     dataIndex : "Requirements",
+                    //     renderer : app.renderer.renderComponentValuePointsEstimate,
+                    //     cls : 'component-color',
+                    //     width : 85,
+                    //     sortable:false,
+                    //     align : 'right'
+                    // }));
                     app.renderer.getColumns().push( Ext.create('Ext.grid.column.Column',{
                         project : name,
                         renderType : "WorkRemaining",
